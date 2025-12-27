@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - GearGuard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="bg-circle circle-1"></div>
+        <div class="bg-circle circle-2"></div>
+        <div class="bg-circle circle-3"></div>
+    </div>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-links">
+                <a href="/maintenance" class="nav-item">Maintenance</a>
+                <a href="/dashboard" class="nav-item active">Dashboard</a>
+                <a href="/maintenance-calendar" class="nav-item">Maintenance Calendar</a>
+                <a href="/equipment" class="nav-item">Equipment</a>
+                <a href="/reporting" class="nav-item">Reporting</a>
+                <a href="/teams" class="nav-item">Teams</a>
+            </div>
+            <div class="nav-user">
+                <span class="user-name">{{ user }}</span>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <button class="new-btn">New</button>
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search...">
+                <select class="search-dropdown">
+                    <option>All</option>
+                    <option>Equipment</option>
+                    <option>Requests</option>
+                    <option>Technicians</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <!-- Critical Equipment Card -->
+            <div class="stat-card critical" data-animate="fadeInUp" data-delay="0.1s">
+                <div class="stat-header">
+                    <h3>Critical Equipment</h3>
+                    <span class="stat-icon pulse-icon">⚠️</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" data-count="{{ critical_count }}">0</div>
+                    <div class="stat-label">Health < 30%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill critical-progress" style="width: {{ (critical_count / 10) * 100 }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technician Load Card -->
+            <div class="stat-card technician" data-animate="fadeInUp" data-delay="0.2s">
+                <div class="stat-header">
+                    <h3>Technician Load</h3>
+                    <span class="stat-icon rotate-icon">👷</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" data-count="{{ technician_util }}">0<span class="percent-sign">%</span> Utilized</div>
+                    <div class="stat-label">(Assign Carefully)</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill technician-progress" style="width: {{ technician_util }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Open Requests Card -->
+            <div class="stat-card requests" data-animate="fadeInUp" data-delay="0.3s">
+                <div class="stat-header">
+                    <h3>Open Requests</h3>
+                    <span class="stat-icon bounce-icon">📋</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" data-count="{{ pending_count }}">0<span class="value-label"> Pending</span></div>
+                    <div class="stat-label"><span class="overdue-count" data-count="{{ overdue_count }}">0</span> Overdue</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill requests-progress" style="width: {{ ((pending_count + overdue_count) / 20) * 100 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Requests Table -->
+        <div class="table-container" data-animate="fadeInUp" data-delay="0.4s">
+            <div class="table-header">
+                <h2>Maintenance Requests</h2>
+                <div class="table-header-decoration"></div>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Subjects</th>
+                        <th>Employee</th>
+                        <th>Technician</th>
+                        <th>Category</th>
+                        <th>Stage</th>
+                        <th>Company</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if requests %}
+                        {% for request in requests %}
+                        <tr class="table-row-animate" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+                            <td><span class="table-cell-content">{{ request[0] }}</span></td>
+                            <td><span class="table-cell-content">{{ request[1] }}</span></td>
+                            <td><span class="table-cell-content">{{ request[2] or 'Unassigned' }}</span></td>
+                            <td><span class="category-badge badge-animate">{{ request[3] }}</span></td>
+                            <td><span class="stage-badge badge-animate">{{ request[4] }}</span></td>
+                            <td><span class="table-cell-content">{{ request[5] }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="no-data">No requests found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Number counting animation
+        function animateValue(element, start, end, duration, suffix = '', prefix = '') {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const current = Math.floor(progress * (end - start) + start);
+                
+                // Preserve HTML structure if it exists
+                if (element.querySelector('.percent-sign')) {
+                    element.innerHTML = current + '<span class="percent-sign">%</span> Utilized';
+                } else if (element.querySelector('.value-label')) {
+                    element.innerHTML = current + '<span class="value-label"> Pending</span>';
+                } else {
+                    element.textContent = prefix + current + suffix;
+                }
+                
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Initialize animations on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate stat values
+            const statValues = document.querySelectorAll('.stat-value[data-count]');
+            statValues.forEach(element => {
+                const target = parseInt(element.getAttribute('data-count'));
+                const originalHTML = element.innerHTML;
+                
+                // Check what suffix to use based on original content
+                let suffix = '';
+                if (originalHTML.includes('Units')) {
+                    suffix = ' Units';
+                } else if (originalHTML.includes('Utilized')) {
+                    // Keep the HTML structure for percentage
+                    setTimeout(() => {
+                        animateValue(element, 0, target, 1500);
+                    }, 500);
+                    return;
+                } else if (originalHTML.includes('Pending')) {
+                    // Keep the HTML structure for pending
+                    setTimeout(() => {
+                        animateValue(element, 0, target, 1500);
+                    }, 500);
+                    return;
+                }
+                
+                element.textContent = '0';
+                setTimeout(() => {
+                    animateValue(element, 0, target, 1500, suffix);
+                }, 500);
+            });
+
+            // Animate overdue count separately
+            const overdueElement = document.querySelector('.overdue-count');
+            if (overdueElement) {
+                const overdueTarget = parseInt(overdueElement.getAttribute('data-count'));
+                overdueElement.textContent = '0';
+                setTimeout(() => {
+                    animateValue(overdueElement, 0, overdueTarget, 1500);
+                }, 800);
+            }
+
+            // Progress bar animations
+            const progressBars = document.querySelectorAll('.progress-fill');
+            progressBars.forEach((bar, index) => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.transition = 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                    bar.style.width = width;
+                }, 500 + (index * 200));
+            });
+
+            // Intersection Observer for scroll animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate');
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('[data-animate]').forEach(el => {
+                observer.observe(el);
+            });
+
+            // Trigger animations immediately for elements in viewport
+            setTimeout(() => {
+                document.querySelectorAll('[data-animate]').forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.top < window.innerHeight && rect.bottom > 0) {
+                        el.classList.add('animate');
+                    }
+                });
+            }, 100);
+        });
+    </script>
+</body>
+</html>
+
