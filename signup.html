@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - GearGuard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Create Account</h1>
+                <p>Join GearGuard today</p>
+            </div>
+
+            {% if error %}
+            <div class="error-message">
+                <span class="error-icon">⚠️</span>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            {% if success %}
+            <div class="success-message">
+                <span class="success-icon">✓</span>
+                <span>{{ success }}</span>
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/signup" class="auth-form" id="signupForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="Enter your email"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="new-password"
+                    >
+                    <div class="password-requirements">
+                        <p class="requirement-title">Password must contain:</p>
+                        <ul class="requirements-list">
+                            <li id="req-lowercase" class="requirement-item">
+                                <span class="req-icon">○</span> At least one lowercase letter
+                            </li>
+                            <li id="req-uppercase" class="requirement-item">
+                                <span class="req-icon">○</span> At least one uppercase letter
+                            </li>
+                            <li id="req-special" class="requirement-item">
+                                <span class="req-icon">○</span> At least one special character
+                            </li>
+                            <li id="req-length" class="requirement-item">
+                                <span class="req-icon">○</span> More than 8 characters
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">Confirm Password</label>
+                    <input 
+                        type="password" 
+                        id="confirm_password" 
+                        name="confirm_password" 
+                        placeholder="Confirm your password"
+                        required
+                        autocomplete="new-password"
+                    >
+                    <div id="password-match" class="password-match"></div>
+                </div>
+
+                <button type="submit" class="auth-button">Create Account</button>
+            </form>
+
+            <div class="auth-footer">
+                <p class="auth-divider">Already have an account? <a href="/login" class="auth-link">Sign In</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirm_password');
+        const form = document.getElementById('signupForm');
+
+        // Password validation
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            
+            // Check lowercase
+            const hasLowercase = /[a-z]/.test(password);
+            updateRequirement('req-lowercase', hasLowercase);
+            
+            // Check uppercase
+            const hasUppercase = /[A-Z]/.test(password);
+            updateRequirement('req-uppercase', hasUppercase);
+            
+            // Check special character
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            updateRequirement('req-special', hasSpecial);
+            
+            // Check length
+            const hasLength = password.length > 8;
+            updateRequirement('req-length', hasLength);
+        });
+
+        // Confirm password match
+        confirmPasswordInput.addEventListener('input', function() {
+            const password = passwordInput.value;
+            const confirmPassword = this.value;
+            const matchDiv = document.getElementById('password-match');
+            
+            if (confirmPassword.length === 0) {
+                matchDiv.textContent = '';
+                matchDiv.className = 'password-match';
+                return;
+            }
+            
+            if (password === confirmPassword) {
+                matchDiv.textContent = '✓ Passwords match';
+                matchDiv.className = 'password-match match';
+            } else {
+                matchDiv.textContent = '✗ Passwords do not match';
+                matchDiv.className = 'password-match no-match';
+            }
+        });
+
+        function updateRequirement(id, isValid) {
+            const element = document.getElementById(id);
+            const icon = element.querySelector('.req-icon');
+            
+            if (isValid) {
+                icon.textContent = '✓';
+                element.classList.add('valid');
+                element.classList.remove('invalid');
+            } else {
+                icon.textContent = '○';
+                element.classList.add('invalid');
+                element.classList.remove('valid');
+            }
+        }
+
+        // Form validation before submit
+        form.addEventListener('submit', function(e) {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            
+            const hasLowercase = /[a-z]/.test(password);
+            const hasUppercase = /[A-Z]/.test(password);
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            const hasLength = password.length > 8;
+            
+            if (!hasLowercase || !hasUppercase || !hasSpecial || !hasLength) {
+                e.preventDefault();
+                alert('Please ensure your password meets all requirements.');
+                return false;
+            }
+            
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('Passwords do not match.');
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>
+
