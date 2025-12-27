@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - GearGuard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="bg-circle circle-1"></div>
+        <div class="bg-circle circle-2"></div>
+        <div class="bg-circle circle-3"></div>
+    </div>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-links">
+                <a href="/maintenance" class="nav-item">Maintenance</a>
+                <a href="/dashboard" class="nav-item active">Dashboard</a>
+                <a href="/maintenance-calendar" class="nav-item">Maintenance Calendar</a>
+                <a href="/equipment" class="nav-item">Equipment</a>
+                <a href="/reporting" class="nav-item">Reporting</a>
+                <a href="/teams" class="nav-item">Teams</a>
+            </div>
+            <div class="nav-user">
+                <span class="user-name">{{ user }}</span>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <button class="new-btn" onclick="openRequestModal()">New Request</button>
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search...">
+                <select class="search-dropdown">
+                    <option>All</option>
+                    <option>Equipment</option>
+                    <option>Requests</option>
+                    <option>Technicians</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <!-- Row 1: Critical Equipment, Technician Load, Open Requests -->
+            
+            <!-- Critical Equipment Card -->
+            <div class="stat-card critical" data-animate="fadeInUp" data-delay="0.1s">
+                <div class="stat-header">
+                    <h3>Critical Equipment</h3>
+                    <span class="stat-icon pulse-icon">⚠️</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" data-count="{{ critical_count }}">0</div>
+                    <div class="stat-label">Health < 30%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill critical-progress" style="width: {{ critical_progress }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technician Load Card -->
+            <div class="stat-card technician" data-animate="fadeInUp" data-delay="0.2s">
+                <div class="stat-header">
+                    <h3>Technician Load</h3>
+                    <span class="stat-icon rotate-icon">👷</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" data-count="{{ technician_util }}">0<span class="percent-sign">%</span> Utilized</div>
+                    <div class="stat-label">(Assign Carefully)</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill technician-progress" style="width: {{ technician_util }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Open Requests Card -->
+            <div class="stat-card requests" data-animate="fadeInUp" data-delay="0.3s">
+                <div class="stat-header">
+                    <h3>Open Requests</h3>
+                    <span class="stat-icon bounce-icon">📋</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" data-count="{{ pending_count }}">0<span class="value-label"> Pending</span></div>
+                    <div class="stat-label"><span class="overdue-count" data-count="{{ overdue_count }}">0</span> Overdue</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill requests-progress" style="width: {{ requests_progress }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: In Progress, Completed, New Requests -->
+            
+            <!-- In Progress Card -->
+            <div class="stat-card technician" data-animate="fadeInUp" data-delay="0.4s">
+                <div class="stat-header">
+                    <h3>In Progress</h3>
+                    <span class="stat-icon rotate-icon">⚙️</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" data-count="{{ in_progress_count }}">0</div>
+                    <div class="stat-label">Being Worked On</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill technician-progress" style="width: {{ in_progress_progress }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completed Card -->
+            <div class="stat-card requests" data-animate="fadeInUp" data-delay="0.5s">
+                <div class="stat-header">
+                    <h3>Completed</h3>
+                    <span class="stat-icon bounce-icon">✓</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" data-count="{{ completed_count }}">0</div>
+                    <div class="stat-label">Repaired</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill requests-progress" style="width: {{ completed_progress }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Requests Card -->
+            <div class="stat-card critical" data-animate="fadeInUp" data-delay="0.6s">
+                <div class="stat-header">
+                    <h3>New Requests</h3>
+                    <span class="stat-icon pulse-icon">📋</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" data-count="{{ new_count }}">0</div>
+                    <div class="stat-label">Awaiting Action</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill critical-progress" style="width: {{ new_progress }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Requests Table -->
+        <div class="table-container" data-animate="fadeInUp" data-delay="0.4s">
+            <div class="table-header">
+                <h2>Maintenance Requests</h2>
+                <div class="table-header-decoration"></div>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Employee</th>
+                        <th>Technician</th>
+                        <th>Category</th>
+                        <th>Stage</th>
+                        <th>Company</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if requests %}
+                        {% for request in requests %}
+                        <tr class="table-row-animate" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+                            <td><span class="table-cell-content">{{ request[1] }}</span></td>
+                            <td><span class="table-cell-content">{{ request[2] }}</span></td>
+                            <td><span class="table-cell-content">{{ request[3] or 'Unassigned' }}</span></td>
+                            <td><span class="category-badge badge-animate">{{ request[4] or 'N/A' }}</span></td>
+                            <td><span class="stage-badge badge-animate">{{ request[5] }}</span></td>
+                            <td><span class="table-cell-content">{{ request[6] }}</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn view-btn" onclick="viewRequest({{ request[0] }})" title="View Request">
+                                        <span>👁️</span> View
+                                    </button>
+                                    <button class="action-btn update-btn" onclick="updateRequest({{ request[0] }})" title="Update Request">
+                                        <span>✏️</span> Update
+                                    </button>
+                                    <button class="action-btn delete-btn" onclick="deleteRequest({{ request[0] }})" title="Delete Request">
+                                        <span>🗑️</span> Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="no-data">No requests found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Number counting animation
+        function animateValue(element, start, end, duration, suffix = '', prefix = '') {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const current = Math.floor(progress * (end - start) + start);
+                
+                // Preserve HTML structure if it exists
+                if (element.querySelector('.percent-sign')) {
+                    element.innerHTML = current + '<span class="percent-sign">%</span> Utilized';
+                } else if (element.querySelector('.value-label')) {
+                    element.innerHTML = current + '<span class="value-label"> Pending</span>';
+                } else {
+                    element.textContent = prefix + current + suffix;
+                }
+                
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Initialize animations on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate stat values
+            const statValues = document.querySelectorAll('.stat-value[data-count]');
+            statValues.forEach(element => {
+                const target = parseInt(element.getAttribute('data-count'));
+                const originalHTML = element.innerHTML;
+                
+                // Check what suffix to use based on original content
+                let suffix = '';
+                if (originalHTML.includes('Units')) {
+                    suffix = ' Units';
+                } else if (originalHTML.includes('Utilized')) {
+                    // Keep the HTML structure for percentage
+                    setTimeout(() => {
+                        animateValue(element, 0, target, 1500);
+                    }, 500);
+                    return;
+                } else if (originalHTML.includes('Pending')) {
+                    // Keep the HTML structure for pending
+                    setTimeout(() => {
+                        animateValue(element, 0, target, 1500);
+                    }, 500);
+                    return;
+                }
+                
+                element.textContent = '0';
+                setTimeout(() => {
+                    animateValue(element, 0, target, 1500, suffix);
+                }, 500);
+            });
+
+            // Animate overdue count separately
+            const overdueElement = document.querySelector('.overdue-count');
+            if (overdueElement) {
+                const overdueTarget = parseInt(overdueElement.getAttribute('data-count'));
+                overdueElement.textContent = '0';
+                setTimeout(() => {
+                    animateValue(overdueElement, 0, overdueTarget, 1500);
+                }, 800);
+            }
+
+            // Progress bar animations
+            const progressBars = document.querySelectorAll('.progress-fill');
+            progressBars.forEach((bar, index) => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.transition = 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                    bar.style.width = width;
+                }, 500 + (index * 200));
+            });
+
+            // Intersection Observer for scroll animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate');
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('[data-animate]').forEach(el => {
+                observer.observe(el);
+            });
+
+            // Trigger animations immediately for elements in viewport
+            setTimeout(() => {
+                document.querySelectorAll('[data-animate]').forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.top < window.innerHeight && rect.bottom > 0) {
+                        el.classList.add('animate');
+                    }
+                });
+            }, 100);
+        });
+
+        function openRequestModal() {
+            document.getElementById('requestModal').style.display = 'flex';
+            // Reset form
+            document.getElementById('requestForm').reset();
+            document.getElementById('maintenanceFor').value = 'Equipment';
+            toggleMaintenanceType();
+            switchTab('notes');
+        }
+
+        function closeRequestModal() {
+            document.getElementById('requestModal').style.display = 'none';
+        }
+
+        function toggleMaintenanceType() {
+            const maintenanceFor = document.getElementById('maintenanceFor').value;
+            const equipmentField = document.getElementById('equipmentField');
+            const workCenterField = document.getElementById('workCenterField');
+            const equipmentSelect = document.getElementById('equipmentSelect');
+            const workCenterSelect = document.getElementById('workCenterSelect');
+            
+            if (maintenanceFor === 'Equipment') {
+                equipmentField.style.display = 'grid';
+                workCenterField.style.display = 'none';
+                equipmentSelect.required = true;
+                workCenterSelect.required = false;
+                workCenterSelect.value = '';
+            } else {
+                equipmentField.style.display = 'none';
+                workCenterField.style.display = 'grid';
+                equipmentSelect.required = false;
+                workCenterSelect.required = true;
+                equipmentSelect.value = '';
+            }
+        }
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.getElementById('notesContent').style.display = 'none';
+            document.getElementById('instructionsContent').style.display = 'none';
+            
+            // Remove active class from all tabs
+            document.getElementById('notesTab').classList.remove('active');
+            document.getElementById('instructionsTab').classList.remove('active');
+            
+            // Show selected tab content
+            if (tabName === 'notes') {
+                document.getElementById('notesContent').style.display = 'block';
+                document.getElementById('notesTab').classList.add('active');
+                document.getElementById('notesTab').style.borderBottom = '3px solid #667eea';
+                document.getElementById('notesTab').style.color = '#667eea';
+                document.getElementById('instructionsTab').style.borderBottom = '3px solid transparent';
+                document.getElementById('instructionsTab').style.color = '#666';
+            } else if (tabName === 'instructions') {
+                document.getElementById('instructionsContent').style.display = 'block';
+                document.getElementById('instructionsTab').classList.add('active');
+                document.getElementById('instructionsTab').style.borderBottom = '3px solid #667eea';
+                document.getElementById('instructionsTab').style.color = '#667eea';
+                document.getElementById('notesTab').style.borderBottom = '3px solid transparent';
+                document.getElementById('notesTab').style.color = '#666';
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('requestModal');
+            if (event.target == modal) {
+                closeRequestModal();
+            }
+            const viewModal = document.getElementById('viewModal');
+            if (event.target == viewModal) {
+                closeViewModal();
+            }
+            const updateModal = document.getElementById('updateModal');
+            if (event.target == updateModal) {
+                closeUpdateModal();
+            }
+        }
+
+        // View Request
+        function viewRequest(id) {
+            fetch(`/view-request/${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const request = data.request;
+                        document.getElementById('viewSubject').textContent = request.subject || 'N/A';
+                        document.getElementById('viewEmployee').textContent = request.employee || 'N/A';
+                        document.getElementById('viewTechnician').textContent = request.technician || 'Unassigned';
+                        document.getElementById('viewCategory').textContent = request.category || 'N/A';
+                        document.getElementById('viewEquipment').textContent = request.equipment_name || 'N/A';
+                        document.getElementById('viewTeam').textContent = request.team || 'Unassigned';
+                        document.getElementById('viewPriority').textContent = request.priority || 'Medium';
+                        document.getElementById('viewStatus').textContent = request.status || 'New';
+                        document.getElementById('viewType').textContent = request.request_type || 'N/A';
+                        document.getElementById('viewDescription').textContent = request.description || 'No description provided';
+                        document.getElementById('viewCompany').textContent = request.company || 'My company';
+                        document.getElementById('viewRequestDate').textContent = request.request_date || 'N/A';
+                        document.getElementById('viewScheduledDate').textContent = request.scheduled_date || 'N/A';
+                        document.getElementById('viewDueDate').textContent = request.due_date || 'N/A';
+                        document.getElementById('viewDuration').textContent = request.duration || 'N/A';
+                        document.getElementById('viewCreatedAt').textContent = request.created_at || 'N/A';
+                        document.getElementById('viewModal').style.display = 'flex';
+                    } else {
+                        alert('Error loading request: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading request');
+                });
+        }
+
+        function closeViewModal() {
+            document.getElementById('viewModal').style.display = 'none';
+        }
+
+        // Update Request
+        function updateRequest(id) {
+            fetch(`/view-request/${id}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const request = data.request;
+                        
+                        // Helper function to safely set field value
+                        function setFieldValue(fieldId, value) {
+                            const field = document.getElementById(fieldId);
+                            if (field) {
+                                field.value = value || '';
+                            } else {
+                                console.warn(`Field with id '${fieldId}' not found`);
+                            }
+                        }
+                        
+                        setFieldValue('updateRequestId', id);
+                        setFieldValue('updateSubject', request.subject);
+                        setFieldValue('updateEmployee', request.employee);
+                        setFieldValue('updateTechnician', request.technician);
+                        setFieldValue('updateCategory', request.category);
+                        setFieldValue('updateEquipment', request.equipment_id);
+                        setFieldValue('updateTeam', request.team);
+                        setFieldValue('updatePriority', request.priority || 'Medium');
+                        setFieldValue('updateStatus', request.status || 'New');
+                        setFieldValue('updateType', request.request_type || 'Corrective');
+                        setFieldValue('updateDescription', request.description);
+                        setFieldValue('updateCompany', request.company || 'My company');
+                        setFieldValue('updateRequestDate', request.request_date);
+                        setFieldValue('updateScheduledDate', request.scheduled_date);
+                        setFieldValue('updateDueDate', request.due_date);
+                        setFieldValue('updateDuration', request.duration);
+                        
+                        document.getElementById('updateModal').style.display = 'flex';
+                    } else {
+                        alert('Error loading request: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading request: ' + error.message);
+                });
+        }
+
+        function closeUpdateModal() {
+            document.getElementById('updateModal').style.display = 'none';
+        }
+
+        // Delete Request
+        function deleteRequest(id) {
+            if (confirm('Are you sure you want to delete this request? This action cannot be undone.')) {
+                fetch(`/delete-request/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Request deleted successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error deleting request: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting request');
+                });
+            }
+        }
+    </script>
+
+    <!-- Request Modal -->
+    <div id="requestModal" class="modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; border-radius: 12px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button class="modal-close" onclick="closeRequestModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 2rem; color: #999; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">×</button>
+            
+            <h2 style="font-size: 1.8rem; font-weight: 700; color: #333; margin-bottom: 10px;">Create Maintenance Request</h2>
+            <p style="color: #666; margin-bottom: 24px;">Submit a new maintenance request for equipment repair or scheduled maintenance.</p>
+            
+            <form method="POST" action="/create-request" class="request-form" id="requestForm">
+                <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Subject *</label>
+                        <input type="text" name="subject" placeholder="e.g., Leaking Oil, Strange Noise" required style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Maintenance For *</label>
+                        <select name="maintenance_for" id="maintenanceFor" required onchange="toggleMaintenanceType()" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                            <option value="Equipment" selected>Equipment</option>
+                            <option value="Work Center">Work Center</option>
+                        </select>
+                    </div>
+
+                    <div id="equipmentField" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Equipment *</label>
+                            <select name="equipment_id" id="equipmentSelect" required style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                                <option value="">Select equipment</option>
+                                {% for eq in equipment %}
+                                <option value="{{ eq[0] }}">{{ eq[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Category</label>
+                            <input type="text" name="category" placeholder="e.g., Computers, Machinery" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                    </div>
+
+                    <div id="workCenterField" style="display: none; grid-template-columns: 1fr; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Work Center *</label>
+                            <select name="work_center_id" id="workCenterSelect" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                                <option value="">Select work center</option>
+                                {% if work_centers %}
+                                    {% for wc in work_centers %}
+                                    <option value="{{ wc[0] }}">{{ wc[1] }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="" disabled>No work centers available. Please create one first.</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Maintenance Type</label>
+                            <div style="display: flex; gap: 20px; align-items: center; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="radio" name="request_type" value="Corrective" checked>
+                                    <span>Corrective</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="radio" name="request_type" value="Preventive">
+                                    <span>Preventive</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Priority</label>
+                            <select name="priority" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Team</label>
+                            <input type="text" name="team" placeholder="e.g., Internal Maintenance" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Technician</label>
+                            <input type="text" name="technician" placeholder="e.g., Aka Foster" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Request Date</label>
+                            <input type="date" name="request_date" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Scheduled Date</label>
+                            <input type="date" name="scheduled_date" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Duration</label>
+                            <input type="text" name="duration" placeholder="e.g., 2 hours" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Description (Optional)</label>
+                        <textarea name="description" rows="4" placeholder="Describe the issue in detail..." style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; font-family: inherit; resize: vertical;"></textarea>
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Company</label>
+                        <input type="text" name="company" value="My company" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+
+                    <!-- Notes and Instructions Tabs -->
+                    <div style="margin-top: 20px;">
+                        <div style="display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 15px;">
+                            <button type="button" class="tab-btn active" onclick="switchTab('notes')" id="notesTab" style="padding: 12px 24px; background: none; border: none; border-bottom: 3px solid #667eea; color: #667eea; font-weight: 600; cursor: pointer; font-size: 0.95rem;">Notes</button>
+                            <button type="button" class="tab-btn" onclick="switchTab('instructions')" id="instructionsTab" style="padding: 12px 24px; background: none; border: none; border-bottom: 3px solid transparent; color: #666; font-weight: 600; cursor: pointer; font-size: 0.95rem;">Instructions</button>
+                        </div>
+                        <div id="notesContent" class="tab-content">
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Notes</label>
+                            <textarea name="notes" rows="6" placeholder="Add notes about this maintenance request..." style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; font-family: inherit; resize: vertical;"></textarea>
+                        </div>
+                        <div id="instructionsContent" class="tab-content" style="display: none;">
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Instructions</label>
+                            <textarea name="instructions" rows="6" placeholder="Add instructions for this maintenance request..." style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; font-family: inherit; resize: vertical;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px;">
+                    <button type="button" onclick="closeRequestModal()" style="padding: 12px 24px; background: #f5f5f5; color: #333; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <button type="submit" style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer;">Create Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Request Modal -->
+    <div id="viewModal" class="modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; border-radius: 12px; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button class="modal-close" onclick="closeViewModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 2rem; color: #999; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">×</button>
+            
+            <h2 style="font-size: 1.8rem; font-weight: 700; color: #333; margin-bottom: 24px;">View Maintenance Request</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Subject</label>
+                    <div id="viewSubject" style="padding: 10px; background: #f5f5f5; border-radius: 6px; font-weight: 600;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Employee</label>
+                    <div id="viewEmployee" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Equipment</label>
+                    <div id="viewEquipment" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Category</label>
+                    <div id="viewCategory" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Team</label>
+                    <div id="viewTeam" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Technician</label>
+                    <div id="viewTechnician" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Priority</label>
+                    <div id="viewPriority" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Status</label>
+                    <div id="viewStatus" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Request Type</label>
+                    <div id="viewType" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Company</label>
+                    <div id="viewCompany" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Request Date</label>
+                    <div id="viewRequestDate" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Scheduled Date</label>
+                    <div id="viewScheduledDate" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Due Date</label>
+                    <div id="viewDueDate" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Duration</label>
+                    <div id="viewDuration" style="padding: 10px; background: #f5f5f5; border-radius: 6px;">-</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px;">Description</label>
+                <div id="viewDescription" style="padding: 15px; background: #f5f5f5; border-radius: 6px; min-height: 80px; white-space: pre-wrap;">-</div>
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #999; font-size: 0.85rem;">
+                Created: <span id="viewCreatedAt">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Request Modal -->
+    <div id="updateModal" class="modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; border-radius: 12px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button class="modal-close" onclick="closeUpdateModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 2rem; color: #999; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">×</button>
+            
+            <h2 style="font-size: 1.8rem; font-weight: 700; color: #333; margin-bottom: 10px;">Update Maintenance Request</h2>
+            <p style="color: #666; margin-bottom: 24px;">Update the maintenance request details.</p>
+            
+            <form method="POST" action="/update-request" class="request-form" id="updateRequestForm">
+                <input type="hidden" id="updateRequestId" name="request_id">
+                
+                <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Subject *</label>
+                        <input type="text" id="updateSubject" name="subject" required style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Employee</label>
+                        <input type="text" id="updateEmployee" name="employee" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Equipment</label>
+                            <select id="updateEquipment" name="equipment_id" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                                <option value="">Select equipment</option>
+                                {% for eq in equipment %}
+                                <option value="{{ eq[0] }}">{{ eq[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Category</label>
+                            <input type="text" id="updateCategory" name="category" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Maintenance Type</label>
+                            <select id="updateType" name="request_type" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                                <option value="Corrective">Corrective</option>
+                                <option value="Preventive">Preventive</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Priority</label>
+                            <select id="updatePriority" name="priority" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Team</label>
+                            <input type="text" id="updateTeam" name="team" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Technician</label>
+                            <input type="text" id="updateTechnician" name="technician" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Status</label>
+                        <select id="updateStatus" name="status" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                            <option value="New">New</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Blocked">Blocked</option>
+                            <option value="Ready for next stage">Ready for next stage</option>
+                            <option value="Repaired">Repaired</option>
+                            <option value="Scrap">Scrap</option>
+                        </select>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Request Date</label>
+                            <input type="date" id="updateRequestDate" name="request_date" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Scheduled Date</label>
+                            <input type="date" id="updateScheduledDate" name="scheduled_date" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Due Date</label>
+                            <input type="date" id="updateDueDate" name="due_date" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Duration</label>
+                        <input type="text" id="updateDuration" name="duration" placeholder="e.g., 2 hours" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Description</label>
+                        <textarea id="updateDescription" name="description" rows="4" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; font-family: inherit; resize: vertical;"></textarea>
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Company</label>
+                        <input type="text" id="updateCompany" name="company" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button type="button" onclick="closeUpdateModal()" style="padding: 12px 24px; background: #e0e0e0; color: #333; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 600;">Cancel</button>
+                        <button type="submit" style="padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 600;">Update Request</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
+

@@ -1,0 +1,176 @@
+{% extends "base_old.html" %}
+
+{% block title %}Equipment Detail - GearGuard{% endblock %}
+
+{% block content %}
+<!-- Top Bar -->
+<div class="top-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <button class="new-btn" onclick="window.location.href='/equipment'">New</button>
+        <h1 style="font-size: 1.5rem; font-weight: 700; color: #333; margin: 0;">Equipment</h1>
+    </div>
+    <button class="new-btn" onclick="viewMaintenanceRequests()" style="background: #f39c12;">
+        🔧 Maintenance
+    </button>
+</div>
+
+<!-- Equipment Form -->
+<div class="table-container" style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <form method="POST" action="/update-equipment" id="equipmentForm">
+        <input type="hidden" name="equipment_id" value="{{ equipment[0] }}">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Left Column -->
+            <div style="display: grid; gap: 20px;">
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Name?</label>
+                    <input type="text" name="name" value="{{ equipment[1] if equipment[1] else '' }}" required style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Equipment Category?</label>
+                    <select name="equipment_category_id" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                        <option value="">Select Category</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat[0] }}" {% if equipment[8] == cat[0] %}selected{% endif %}>{{ cat[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Company?</label>
+                    <input type="text" name="company" value="{{ equipment[9] if equipment[9] else 'My Company (San Francisco)' }}" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Used By?</label>
+                    <select name="used_by" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                        <option value="">Select</option>
+                        <option value="Employee" {% if equipment[10] == 'Employee' %}selected{% endif %}>Employee</option>
+                        <option value="Department" {% if equipment[10] == 'Department' %}selected{% endif %}>Department</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Maintenance Team?</label>
+                    <input type="text" name="maintenance_team" value="{{ equipment[11] if equipment[11] else 'Internal Maintenance' }}" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Assigned Date?</label>
+                    <input type="date" name="assigned_date" value="{{ equipment[12] if equipment[12] else '' }}" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Description</label>
+                    <textarea name="description" rows="4" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; resize: vertical;">{{ equipment[13] if equipment[13] else '' }}</textarea>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div style="display: grid; gap: 20px;">
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Technician?</label>
+                    <input type="text" name="technician" value="{{ equipment[7] if equipment[7] else '' }}" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Employee?</label>
+                    <input type="text" name="employee" value="{{ equipment[4] if equipment[4] else '' }}" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Department</label>
+                    <input type="text" name="department" value="{{ equipment[5] if equipment[5] else '' }}" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Serial Number</label>
+                    <input type="text" name="serial_number" value="{{ equipment[6] if equipment[6] else '' }}" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Scrap Date?</label>
+                    <input type="date" name="scrap_date" value="{{ equipment[14] if equipment[14] else '' }}" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Used in location?</label>
+                    <input type="text" name="used_in_location" value="{{ equipment[15] if equipment[15] else '' }}" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Work Center?</label>
+                    <select name="work_center_id" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                        <option value="">Select Work Center</option>
+                        {% for wc in work_centers %}
+                        <option value="{{ wc[0] }}" {% if equipment[16] == wc[0] %}selected{% endif %}>{{ wc[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Health Percentage</label>
+                    <input type="number" name="health_percentage" min="0" max="100" value="{{ equipment[2] if equipment[2] else 100 }}" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px;">
+            <button type="button" onclick="deleteEquipment()" style="padding: 12px 24px; background: #e74c3c; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer;">Delete</button>
+            <button type="submit" style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer;">Save</button>
+        </div>
+    </form>
+</div>
+
+<!-- Maintenance Requests Modal -->
+<div id="maintenanceModal" class="modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); align-items: center; justify-content: center;">
+    <div class="modal-content" style="background: white; border-radius: 12px; width: 90%; max-width: 1000px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+        <button class="modal-close" onclick="closeMaintenanceModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 2rem; color: #999; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">×</button>
+        
+        <h2 style="font-size: 1.8rem; font-weight: 700; color: #333; margin-bottom: 20px;">Maintenance Requests for {{ equipment[1] }}</h2>
+        
+        {% if requests and requests|length > 0 %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">ID</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Subject</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Employee</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Technician</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Status</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Scheduled Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr style="border-bottom: 1px solid #e0e0e0;">
+                    <td style="padding: 12px;">{{ req[0] }}</td>
+                    <td style="padding: 12px;">{{ req[1] }}</td>
+                    <td style="padding: 12px;">{{ req[2] }}</td>
+                    <td style="padding: 12px;">{{ req[3] or 'Unassigned' }}</td>
+                    <td style="padding: 12px;">{{ req[7] }}</td>
+                    <td style="padding: 12px;">{{ req[11] if req[11] else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align: center; padding: 40px; color: #999;">No maintenance requests found for this equipment.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function viewMaintenanceRequests() {
+    document.getElementById('maintenanceModal').style.display = 'flex';
+}
+
+function closeMaintenanceModal() {
+    document.getElementById('maintenanceModal').style.display = 'none';
+}
+
+function deleteEquipment() {
+    if (confirm('Are you sure you want to delete this equipment?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/delete-equipment/{{ equipment[0] }}';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('maintenanceModal');
+    if (event.target == modal) {
+        closeMaintenanceModal();
+    }
+}
+</script>
+{% endblock %}
+

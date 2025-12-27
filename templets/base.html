@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GearGuard{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard_new.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">⚙️</div>
+                    <div class="logo-text">
+                        <div class="logo-name">GearGuard</div>
+                        <div class="logo-subtitle">Maintenance Tracker</div>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="/dashboard" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/equipment" class="nav-item {% if active_page == 'equipment' %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Equipment</span>
+                </a>
+                <a href="/requests" class="nav-item {% if active_page == 'requests' %}active{% endif %}">
+                    <span class="nav-icon">📋</span>
+                    <span>Requests</span>
+                </a>
+                <a href="/teams" class="nav-item {% if active_page == 'teams' %}active{% endif %}">
+                    <span class="nav-icon">👥</span>
+                    <span>Teams</span>
+                </a>
+                <a href="/calendar" class="nav-item {% if active_page == 'calendar' %}active{% endif %}">
+                    <span class="nav-icon">📅</span>
+                    <span>Calendar</span>
+                </a>
+                <a href="/users" class="nav-item {% if active_page == 'users' %}active{% endif %}">
+                    <span class="nav-icon">👤</span>
+                    <span>Users</span>
+                </a>
+                <a href="/settings" class="nav-item {% if active_page == 'settings' %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="/logout" class="sign-out">
+                    <span class="sign-out-icon">→</span>
+                    <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

@@ -1,0 +1,47 @@
+{% extends "base_old.html" %}
+
+{% block title %}Settings - GearGuard{% endblock %}
+
+{% block content %}
+<!-- Top Bar -->
+<div class="top-bar">
+    <button class="new-btn">Save Settings</button>
+    <div class="search-container">
+        <input type="text" class="search-input" placeholder="Search settings...">
+    </div>
+</div>
+
+<!-- Settings -->
+<div class="table-container">
+    <div class="table-header">
+        <h2>Application Settings</h2>
+    </div>
+    <div style="padding: 20px 0;">
+        <div style="margin-bottom: 30px;">
+            <h3 style="font-size: 1.2rem; margin-bottom: 15px; color: #333;">Notifications</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
+                <div>
+                    <div style="font-weight: 600; margin-bottom: 5px;">Email Notifications</div>
+                    <div style="color: #666; font-size: 0.9rem;">Receive email updates for maintenance requests</div>
+                </div>
+                <input type="checkbox" checked style="width: 20px; height: 20px;">
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+            <h3 style="font-size: 1.2rem; margin-bottom: 15px; color: #333;">Appearance</h3>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Theme</label>
+                    <select class="search-dropdown" style="width: 200px;">
+                        <option>Light</option>
+                        <option>Dark</option>
+                        <option>Auto</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

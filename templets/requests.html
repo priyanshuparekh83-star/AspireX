@@ -1,0 +1,51 @@
+{% extends "base_old.html" %}
+
+{% block title %}Requests - GearGuard{% endblock %}
+
+{% block content %}
+<!-- Top Bar -->
+<div class="top-bar">
+    <button class="new-btn" onclick="window.location.href='/dashboard'">New Request</button>
+    <div class="search-container">
+        <input type="text" class="search-input" placeholder="Search requests...">
+        <select class="search-dropdown">
+            <option>All Status</option>
+            <option>New</option>
+            <option>In Progress</option>
+            <option>Repaired</option>
+        </select>
+    </div>
+</div>
+
+<!-- Requests Table -->
+<div class="table-container">
+    <div class="table-header">
+        <h2>All Maintenance Requests</h2>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Employee</th>
+                <th>Technician</th>
+                <th>Category</th>
+                <th>Priority</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+            <tr>
+                <td><strong>{{ req[1] }}</strong></td>
+                <td>{{ req[2] }}</td>
+                <td>{{ req[3] or 'Unassigned' }}</td>
+                <td><span class="category-badge">{{ req[4] }}</span></td>
+                <td><span class="stage-badge">{{ req[9] if req|length > 9 else 'Medium' }}</span></td>
+                <td><span class="category-badge">{{ req[7] }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+

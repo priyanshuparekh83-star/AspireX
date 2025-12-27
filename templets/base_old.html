@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GearGuard{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="bg-circle circle-1"></div>
+        <div class="bg-circle circle-2"></div>
+        <div class="bg-circle circle-3"></div>
+    </div>
+    
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-links">
+                <a href="/maintenance" class="nav-item {% if active_page == 'maintenance' %}active{% endif %}">Maintenance</a>
+                <a href="/dashboard" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
+                <a href="/maintenance-calendar" class="nav-item {% if active_page == 'maintenance-calendar' %}active{% endif %}">Maintenance Calendar</a>
+                <a href="/equipment" class="nav-item {% if active_page == 'equipment' %}active{% endif %}">Equipment</a>
+                <a href="/equipment-categories" class="nav-item {% if active_page == 'equipment-categories' %}active{% endif %}">Equipment Categories</a>
+                <a href="/work-centers" class="nav-item {% if active_page == 'work-centers' %}active{% endif %}">Work Centers</a>
+                <a href="/teams" class="nav-item {% if active_page == 'teams' %}active{% endif %}">Teams</a>
+                <a href="/reporting" class="nav-item {% if active_page == 'reporting' %}active{% endif %}">Reporting</a>
+            </div>
+            <div class="nav-user">
+                <span class="user-name">{{ user }}</span>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        {% block content %}{% endblock %}
+    </div>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

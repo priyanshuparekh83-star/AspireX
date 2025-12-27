@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - GearGuard{% endblock %}
+
+{% block content %}
+            <!-- Header -->
+            <header class="content-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Maintenance overview and requests</p>
+                </div>
+                <button class="new-request-btn" onclick="openRequestModal()">
+                    <span>+</span> New Request
+                </button>
+            </header>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>Total Equipment</h3>
+                        <div class="stat-value">{{ stats.total_equipment }}</div>
+                    </div>
+                    <div class="stat-icon equipment-icon">⚙️</div>
+                </div>
+                
+                <div class="stat-card orange">
+                    <div class="stat-info">
+                        <h3>Open Requests</h3>
+                        <div class="stat-value">{{ stats.open_requests }}</div>
+                    </div>
+                    <div class="stat-icon orange-icon">⚠️</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>In Progress</h3>
+                        <div class="stat-value">{{ stats.in_progress }}</div>
+                    </div>
+                    <div class="stat-icon progress-icon">⏰</div>
+                </div>
+                
+                <div class="stat-card green">
+                    <div class="stat-info">
+                        <h3>Completed</h3>
+                        <div class="stat-value">{{ stats.completed }}</div>
+                    </div>
+                    <div class="stat-icon green-icon">✓</div>
+                </div>
+            </div>
+
+            <!-- Maintenance Board -->
+            <div class="maintenance-board">
+                <h2>Maintenance Board</h2>
+                
+                <div class="board-filters">
+                    <div class="filter-item">
+                        <span class="filter-dot blue"></span>
+                        <span>New</span>
+                        <span class="filter-count">{{ new_count }}</span>
+                    </div>
+                    <div class="filter-item">
+                        <span class="filter-dot orange"></span>
+                        <span>In Progress</span>
+                        <span class="filter-count">{{ in_progress_count }}</span>
+                    </div>
+                    <div class="filter-item">
+                        <span class="filter-dot green"></span>
+                        <span>Repaired</span>
+                        <span class="filter-count">{{ repaired_count }}</span>
+                    </div>
+                    <div class="filter-item">
+                        <span class="filter-dot grey"></span>
+                        <span>Scrap</span>
+                        <span class="filter-count">{{ scrap_count }}</span>
+                    </div>
+                </div>
+
+                <div class="board-columns">
+                    <!-- New Column -->
+                    <div class="board-column">
+                        {% for request in new_requests %}
+                        <div class="request-card" draggable="true" data-id="{{ request[0] }}">
+                            <div class="request-header">
+                                <h4>{{ request[1] }}</h4>
+                                <span class="request-priority {{ request[9].lower() }}">{{ request[9] }}</span>
+                            </div>
+                            <p class="request-equipment">{{ request[4] }}</p>
+                            <div class="request-footer">
+                                <span class="request-employee">{{ request[2] }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="add-card" onclick="openRequestModal()">
+                            <span class="add-icon">+</span>
+                            <span>Add Request</span>
+                        </div>
+                    </div>
+
+                    <!-- In Progress Column -->
+                    <div class="board-column">
+                        {% for request in in_progress_requests %}
+                        <div class="request-card" draggable="true" data-id="{{ request[0] }}">
+                            <div class="request-header">
+                                <h4>{{ request[1] }}</h4>
+                                <span class="request-priority {{ request[9].lower() }}">{{ request[9] }}</span>
+                            </div>
+                            <p class="request-equipment">{{ request[4] }}</p>
+                            <div class="request-footer">
+                                <span class="request-employee">{{ request[2] }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Repaired Column -->
+                    <div class="board-column">
+                        {% for request in repaired_requests %}
+                        <div class="request-card" draggable="true" data-id="{{ request[0] }}">
+                            <div class="request-header">
+                                <h4>{{ request[1] }}</h4>
+                                <span class="request-priority {{ request[9].lower() }}">{{ request[9] }}</span>
+                            </div>
+                            <p class="request-equipment">{{ request[4] }}</p>
+                            <div class="request-footer">
+                                <span class="request-employee">{{ request[2] }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Scrap Column -->
+                    <div class="board-column">
+                        {% for request in scrap_requests %}
+                        <div class="request-card" draggable="true" data-id="{{ request[0] }}">
+                            <div class="request-header">
+                                <h4>{{ request[1] }}</h4>
+                                <span class="request-priority {{ request[9].lower() }}">{{ request[9] }}</span>
+                            </div>
+                            <p class="request-equipment">{{ request[4] }}</p>
+                            <div class="request-footer">
+                                <span class="request-employee">{{ request[2] }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+<!-- Request Modal -->
+    <div id="requestModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create Maintenance Request</h2>
+                <button class="modal-close" onclick="closeRequestModal()">×</button>
+            </div>
+            <p class="modal-subtitle">Submit a new maintenance request for equipment repair or scheduled maintenance.</p>
+            
+            <form method="POST" action="/create-request" class="request-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject" placeholder="e.g., Leaking Oil, Strange Noise" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="equipment">Equipment</label>
+                        <select id="equipment" name="equipment_id" required>
+                            <option value="">Select equipment</option>
+                            {% for eq in equipment %}
+                            <option value="{{ eq[0] }}">{{ eq[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="request_type">Type</label>
+                        <select id="request_type" name="request_type" required>
+                            <option value="Corrective (Breakdown)">Corrective (Breakdown)</option>
+                            <option value="Preventive">Preventive</option>
+                            <option value="Predictive">Predictive</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="priority">Priority</label>
+                        <select id="priority" name="priority" required>
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="description">Description (Optional)</label>
+                        <textarea id="description" name="description" rows="4" placeholder="Describe the issue in detail..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="scheduled_date">Scheduled Date</label>
+                        <input type="date" id="scheduled_date" name="scheduled_date">
+                    </div>
+                    <div class="form-group">
+                        <label for="due_date">Due Date</label>
+                        <input type="date" id="due_date" name="due_date">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeRequestModal()">Cancel</button>
+                    <button type="submit" class="btn-create">Create Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openRequestModal() {
+            document.getElementById('requestModal').style.display = 'flex';
+        }
+
+        function closeRequestModal() {
+            document.getElementById('requestModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('requestModal');
+            if (event.target == modal) {
+                closeRequestModal();
+            }
+        }
+
+        // Drag and drop functionality
+        let draggedElement = null;
+
+        document.querySelectorAll('.request-card').forEach(card => {
+            card.addEventListener('dragstart', function(e) {
+                draggedElement = this;
+                this.style.opacity = '0.5';
+            });
+
+            card.addEventListener('dragend', function(e) {
+                this.style.opacity = '1';
+            });
+        });
+
+        document.querySelectorAll('.board-column').forEach(column => {
+            column.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.backgroundColor = '#f0f0f0';
+            });
+
+            column.addEventListener('dragleave', function(e) {
+                this.style.backgroundColor = '';
+            });
+
+            column.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.backgroundColor = '';
+                
+                if (draggedElement) {
+                    const requestId = draggedElement.getAttribute('data-id');
+                    const newStatus = this.closest('.board-columns').querySelectorAll('.board-column').indexOf(this);
+                    const statuses = ['New', 'In Progress', 'Repaired', 'Scrap'];
+                    
+                    // Update status via AJAX
+                    fetch('/update-request-status', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            request_id: requestId,
+                            status: statuses[newStatus]
+                        })
+                    }).then(() => {
+                        location.reload();
+                    });
+                }
+            });
+        });
+    </script>
+{% endblock %}
+

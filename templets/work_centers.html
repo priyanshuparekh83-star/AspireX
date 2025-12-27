@@ -1,0 +1,274 @@
+{% extends "base_old.html" %}
+
+{% block title %}Work Centers - GearGuard{% endblock %}
+
+{% block content %}
+<!-- Top Bar -->
+<div class="top-bar">
+    <button class="new-btn" onclick="openWorkCenterModal()">New</button>
+    <div class="search-container">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search work centers..." onkeyup="filterWorkCenters()">
+    </div>
+</div>
+
+<!-- Work Centers Table -->
+<div class="table-container" data-animate="fadeInUp" style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 20px;">
+    <div class="table-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 1.5rem; font-weight: 700; color: #333; margin: 0;">Work Centers</h2>
+        <span style="color: #666; font-size: 0.9rem;">Total: <strong>{{ work_centers|length if work_centers else 0 }}</strong></span>
+    </div>
+    <table class="data-table" id="workCentersTable" style="width: 100%; border-collapse: collapse; display: table;">
+        <thead>
+            <tr style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Work Center</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Code</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Tag</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Alternative Workcenters</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Cost per hour</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Capacity Time Efficiency</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">OEE Target</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Company</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if work_centers %}
+                {% for wc in work_centers %}
+                <tr style="border-bottom: 1px solid #e0e0e0; transition: background 0.2s ease;">
+                    <td style="padding: 12px;"><strong>{{ wc[1] }}</strong></td>
+                    <td style="padding: 12px;">{{ wc[2] if wc[2] else '-' }}</td>
+                    <td style="padding: 12px;">{{ wc[3] if wc[3] else '-' }}</td>
+                    <td style="padding: 12px;">{{ wc[4] if wc[4] else '-' }}</td>
+                    <td style="padding: 12px;">{{ "%.2f"|format(wc[5]) if wc[5] is not none else '0.00' }}</td>
+                    <td style="padding: 12px;">{{ "%.2f"|format(wc[6]) if wc[6] is not none else '100.00' }}</td>
+                    <td style="padding: 12px;">{{ "%.2f"|format(wc[7]) if wc[7] is not none else '0.00' }}</td>
+                    <td style="padding: 12px;">{{ wc[8] if wc[8] else 'My company' }}</td>
+                    <td style="padding: 12px;">
+                        <button class="action-btn view-btn" onclick="viewWorkCenter({{ wc[0] }})">View</button>
+                        <button class="action-btn update-btn" onclick="editWorkCenter({{ wc[0] }})">Update</button>
+                        <button class="action-btn delete-btn" onclick="deleteWorkCenter({{ wc[0] }})">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
+                        No work centers found. Click "New" to create one.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Create/Edit Work Center Modal -->
+<div id="workCenterModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 700px;">
+        <button class="modal-close" onclick="closeWorkCenterModal()">×</button>
+        <h2 id="modalTitle">Create Work Center</h2>
+        <form method="POST" action="/create-work-center" id="workCenterForm">
+            <input type="hidden" name="work_center_id" id="workCenterId">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <label>Work Center Name *</label>
+                    <input type="text" name="name" id="wcName" required>
+                </div>
+                <div>
+                    <label>Code</label>
+                    <input type="text" name="code" id="wcCode">
+                </div>
+                <div>
+                    <label>Tag</label>
+                    <input type="text" name="tag" id="wcTag">
+                </div>
+                <div>
+                    <label>Alternative Workcenters</label>
+                    <input type="text" name="alternative_workcenters" id="wcAlternative">
+                </div>
+                <div>
+                    <label>Cost per hour</label>
+                    <input type="number" step="0.01" name="cost_per_hour" id="wcCostPerHour" value="0.00">
+                </div>
+                <div>
+                    <label>Capacity Time Efficiency</label>
+                    <input type="number" step="0.01" name="capacity_time_efficiency" id="wcCapacity" value="100.00">
+                </div>
+                <div>
+                    <label>OEE Target</label>
+                    <input type="number" step="0.01" name="oee_target" id="wcOEE" value="0.00">
+                </div>
+                <div>
+                    <label>Company</label>
+                    <input type="text" name="company" id="wcCompany" value="My company">
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px;">
+                <button type="button" onclick="closeWorkCenterModal()">Cancel</button>
+                <button type="submit">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openWorkCenterModal() {
+    document.getElementById('workCenterModal').style.display = 'flex';
+    document.getElementById('modalTitle').textContent = 'Create Work Center';
+    document.getElementById('workCenterForm').reset();
+    document.getElementById('workCenterId').value = '';
+}
+
+function closeWorkCenterModal() {
+    document.getElementById('workCenterModal').style.display = 'none';
+}
+
+function viewWorkCenter(id) {
+    // TODO: Implement view functionality
+    alert('View work center ' + id);
+}
+
+function editWorkCenter(id) {
+    // TODO: Implement edit functionality
+    alert('Edit work center ' + id);
+}
+
+function deleteWorkCenter(id) {
+    if (confirm('Are you sure you want to delete this work center?')) {
+        // TODO: Implement delete functionality
+        alert('Delete work center ' + id);
+    }
+}
+
+function filterWorkCenters() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById('workCentersTable');
+    const tr = table.getElementsByTagName('tr');
+    
+    for (let i = 1; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName('td');
+        let found = false;
+        for (let j = 0; j < td.length; j++) {
+            if (td[j]) {
+                const txtValue = td[j].textContent || td[j].innerText;
+                if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        tr[i].style.display = found ? '' : 'none';
+    }
+}
+</script>
+
+<style>
+.modal {
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #999;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.modal-close:hover {
+    background: #f5f5f5;
+}
+
+.modal-content label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.action-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin: 0 2px;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.view-btn {
+    background: #667eea;
+    color: white;
+}
+
+.update-btn {
+    background: #f39c12;
+    color: white;
+}
+
+.delete-btn {
+    background: #e74c3c;
+    color: white;
+}
+
+.data-table {
+    display: table !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.table-container {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+</style>
+{% endblock %}
+

@@ -1,0 +1,181 @@
+{% extends "base_old.html" %}
+
+{% block title %}Users - GearGuard{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .users-container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .section-desc {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .date-filter {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        .date-select {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+        }
+        .chart-container {
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 20px;
+            padding: 20px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .chart-bar {
+            flex: 1;
+            background: #1976d2;
+            border-radius: 4px 4px 0 0;
+            min-height: 20px;
+            position: relative;
+        }
+        .chart-label {
+            position: absolute;
+            bottom: -25px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .users-table th {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        }
+        .users-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #ff9800;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        .add-user-btn {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .search-bar {
+            padding: 10px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            width: 300px;
+        }
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<!-- Top Bar -->
+<div class="top-bar">
+    <button class="new-btn">Add User</button>
+    <div class="search-container">
+        <input type="text" class="search-input" placeholder="Search by email, phone, or ID">
+    </div>
+</div>
+
+<!-- Signups Section -->
+<div class="table-container" style="margin-bottom: 30px;">
+                <h2 class="section-title">Signups</h2>
+                <p class="section-desc">Manage users and view signups over time.</p>
+                
+                <div class="date-filter">
+                    <select class="date-select">
+                        <option>Last 7 days</option>
+                        <option>Last 30 days</option>
+                        <option>Last 90 days</option>
+                    </select>
+                </div>
+
+                <div class="chart-container">
+                    {% for signup in signups %}
+                    <div class="chart-bar" style="height: {{ (signup[1] / 4) * 100 }}%">
+                        <div class="chart-label">{{ signup[0][5:] }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+<!-- Users Section -->
+<div class="table-container">
+                <h2 class="section-title">Users</h2>
+                <p class="section-desc">View and manage individual users.</p>
+                
+                <div class="table-header">
+                    <button class="add-user-btn">Add User</button>
+                    <input type="text" class="search-bar" placeholder="Search by email, phone, or ID">
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Login methods</th>
+                            <th>Last signed in</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">{{ user.email[0].upper() }}</div>
+                                    <span>{{ user.email }}</span>
+                                </div>
+                            </td>
+                            <td>Email</td>
+                            <td>{{ user.created_at[:10] if user.created_at else 'Never' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+{% endblock %}
+

@@ -1,0 +1,91 @@
+{% extends "base_old.html" %}
+
+{% block title %}Teams - GearGuard{% endblock %}
+
+{% block content %}
+<!-- Top Bar -->
+<div class="top-bar">
+    <button class="new-btn">Create Team</button>
+    <div class="search-container">
+        <input type="text" class="search-input" placeholder="Search teams...">
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <h3>Total Teams</h3>
+            <span class="stat-icon">👥</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">4</div>
+            <div class="stat-label">Active Teams</div>
+        </div>
+    </div>
+    <div class="stat-card technician">
+        <div class="stat-header">
+            <h3>Team Members</h3>
+            <span class="stat-icon">👤</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">12</div>
+            <div class="stat-label">Total Members</div>
+        </div>
+    </div>
+    <div class="stat-card requests">
+        <div class="stat-header">
+            <h3>Available</h3>
+            <span class="stat-icon">✓</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">8</div>
+            <div class="stat-label">Available Now</div>
+        </div>
+    </div>
+</div>
+
+<!-- Teams Table -->
+<div class="table-container">
+    <div class="table-header">
+        <h2>Maintenance Teams</h2>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Team Name</th>
+                <th>Description</th>
+                <th>Members</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Team Alpha</strong></td>
+                <td>Primary maintenance team</td>
+                <td>3</td>
+                <td><span class="category-badge">Active</span></td>
+            </tr>
+            <tr>
+                <td><strong>Team Beta</strong></td>
+                <td>Secondary support team</td>
+                <td>3</td>
+                <td><span class="category-badge">Active</span></td>
+            </tr>
+            <tr>
+                <td><strong>Team Gamma</strong></td>
+                <td>Emergency response team</td>
+                <td>3</td>
+                <td><span class="category-badge">Active</span></td>
+            </tr>
+            <tr>
+                <td><strong>Team Delta</strong></td>
+                <td>Preventive maintenance team</td>
+                <td>3</td>
+                <td><span class="category-badge">Active</span></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+

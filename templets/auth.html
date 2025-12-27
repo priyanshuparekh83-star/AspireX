@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if tab == 'signup' %}Sign Up{% else %}Sign In{% endif %} - GearGuard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth_new.css') }}">
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-card">
+            <!-- Logo and Header -->
+            <div class="auth-header">
+                <div class="logo-icon">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#1976d2"/>
+                        <path d="M20 10L25 15H22V25H18V15H15L20 10Z" fill="white"/>
+                        <path d="M15 28L20 23L25 28" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h1 class="app-name">GearGuard</h1>
+                <p class="app-tagline">Maintenance Management System</p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="auth-tabs">
+                <a href="/login" class="tab {% if tab == 'signin' %}active{% endif %}">Sign In</a>
+                <a href="/signup" class="tab {% if tab == 'signup' %}active{% endif %}">Sign Up</a>
+            </div>
+
+            <!-- Error/Success Messages -->
+            {% if error %}
+            <div class="message error">
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            {% if success %}
+            <div class="message success">
+                <span>{{ success }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Sign In Form -->
+            {% if tab == 'signin' %}
+            <form method="POST" action="/login" class="auth-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">✉</span>
+                        <input type="email" id="email" name="email" placeholder="you@company.com" required autocomplete="email">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="password" name="password" placeholder="********" required autocomplete="current-password">
+                    </div>
+                </div>
+
+                <button type="submit" class="auth-submit-btn">Sign In</button>
+            </form>
+            {% endif %}
+
+            <!-- Sign Up Form -->
+            {% if tab == 'signup' %}
+            <form method="POST" action="/signup" class="auth-form" id="signupForm">
+                <div class="form-group">
+                    <label for="full_name">Full Name</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="full_name" name="full_name" placeholder="John Smith" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">✉</span>
+                        <input type="email" id="email" name="email" placeholder="you@company.com" required autocomplete="email">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="password" name="password" placeholder="********" required autocomplete="new-password">
+                    </div>
+                    <div class="password-requirements">
+                        <p class="requirement-title">Password must contain:</p>
+                        <ul class="requirements-list">
+                            <li id="req-lowercase" class="requirement-item">
+                                <span class="req-icon">○</span> At least one lowercase letter
+                            </li>
+                            <li id="req-uppercase" class="requirement-item">
+                                <span class="req-icon">○</span> At least one uppercase letter
+                            </li>
+                            <li id="req-special" class="requirement-item">
+                                <span class="req-icon">○</span> At least one special character
+                            </li>
+                            <li id="req-length" class="requirement-item">
+                                <span class="req-icon">○</span> More than 8 characters
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">Confirm Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="confirm_password" name="confirm_password" placeholder="********" required autocomplete="new-password">
+                    </div>
+                    <div id="password-match" class="password-match"></div>
+                </div>
+
+                <button type="submit" class="auth-submit-btn">Create Account</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if tab == 'signup' %}
+    <script>
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirm_password');
+        const form = document.getElementById('signupForm');
+
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            
+            const hasLowercase = /[a-z]/.test(password);
+            updateRequirement('req-lowercase', hasLowercase);
+            
+            const hasUppercase = /[A-Z]/.test(password);
+            updateRequirement('req-uppercase', hasUppercase);
+            
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            updateRequirement('req-special', hasSpecial);
+            
+            const hasLength = password.length > 8;
+            updateRequirement('req-length', hasLength);
+        });
+
+        confirmPasswordInput.addEventListener('input', function() {
+            const password = passwordInput.value;
+            const confirmPassword = this.value;
+            const matchDiv = document.getElementById('password-match');
+            
+            if (confirmPassword.length === 0) {
+                matchDiv.textContent = '';
+                matchDiv.className = 'password-match';
+                return;
+            }
+            
+            if (password === confirmPassword) {
+                matchDiv.textContent = '✓ Passwords match';
+                matchDiv.className = 'password-match match';
+            } else {
+                matchDiv.textContent = '✗ Passwords do not match';
+                matchDiv.className = 'password-match no-match';
+            }
+        });
+
+        function updateRequirement(id, isValid) {
+            const element = document.getElementById(id);
+            const icon = element.querySelector('.req-icon');
+            
+            if (isValid) {
+                icon.textContent = '✓';
+                element.classList.add('valid');
+                element.classList.remove('invalid');
+            } else {
+                icon.textContent = '○';
+                element.classList.add('invalid');
+                element.classList.remove('valid');
+            }
+        }
+
+        form.addEventListener('submit', function(e) {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            
+            const hasLowercase = /[a-z]/.test(password);
+            const hasUppercase = /[A-Z]/.test(password);
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            const hasLength = password.length > 8;
+            
+            if (!hasLowercase || !hasUppercase || !hasSpecial || !hasLength) {
+                e.preventDefault();
+                alert('Please ensure your password meets all requirements.');
+                return false;
+            }
+            
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('Passwords do not match.');
+                return false;
+            }
+        });
+    </script>
+    {% endif %}
+</body>
+</html>
+

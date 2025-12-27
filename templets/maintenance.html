@@ -1,0 +1,668 @@
+{% extends "base_old.html" %}
+
+{% block title %}Maintenance - GearGuard{% endblock %}
+
+{% block content %}
+<!-- Top Bar -->
+<div class="top-bar">
+    <button class="new-btn" onclick="openRequestModal()">New Request</button>
+    <div class="search-container">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search requests..." onkeyup="filterRequests()">
+        <select class="search-dropdown" id="statusFilter" onchange="filterRequests()">
+            <option value="">All Status</option>
+            <option value="New">New</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Blocked">Blocked</option>
+            <option value="Ready for next stage">Ready for next stage</option>
+            <option value="Repaired">Repaired</option>
+            <option value="Scrap">Scrap</option>
+        </select>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <!-- New Requests Card -->
+    <div class="stat-card critical" data-animate="fadeInUp" data-delay="0.1s">
+        <div class="stat-header">
+            <h3>New Requests</h3>
+            <span class="stat-icon pulse-icon">📋</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value" data-count="{{ new_count }}">0</div>
+            <div class="stat-label">Awaiting Action</div>
+            <div class="progress-bar">
+                <div class="progress-fill critical-progress" style="width: {{ new_progress }}%"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- In Progress Card -->
+    <div class="stat-card technician" data-animate="fadeInUp" data-delay="0.2s">
+        <div class="stat-header">
+            <h3>In Progress</h3>
+            <span class="stat-icon rotate-icon">⚙️</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value" data-count="{{ in_progress_count }}">0</div>
+            <div class="stat-label">Being Worked On</div>
+            <div class="progress-bar">
+                <div class="progress-fill technician-progress" style="width: {{ in_progress_progress }}%"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Completed Card -->
+    <div class="stat-card requests" data-animate="fadeInUp" data-delay="0.3s">
+        <div class="stat-header">
+            <h3>Completed</h3>
+            <span class="stat-icon bounce-icon">✓</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value" data-count="{{ completed_count }}">0</div>
+            <div class="stat-label">Repaired</div>
+            <div class="progress-bar">
+                <div class="progress-fill requests-progress" style="width: {{ completed_progress }}%"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Blocked Card -->
+    {% if blocked_count > 0 %}
+    <div class="stat-card blocked" data-animate="fadeInUp" data-delay="0.4s">
+        <div class="stat-header">
+            <h3>Blocked</h3>
+            <span class="stat-icon pulse-icon">🚫</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value" data-count="{{ blocked_count }}">0</div>
+            <div class="stat-label">Needs Attention</div>
+            <div class="progress-bar">
+                <div class="progress-fill blocked-progress" style="width: {{ (blocked_count / total_requests * 100) if total_requests > 0 else 0 }}%"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Ready for Next Stage Card -->
+    {% if ready_count > 0 %}
+    <div class="stat-card ready" data-animate="fadeInUp" data-delay="0.5s">
+        <div class="stat-header">
+            <h3>Ready</h3>
+            <span class="stat-icon bounce-icon">✅</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value" data-count="{{ ready_count }}">0</div>
+            <div class="stat-label">Ready for Next Stage</div>
+            <div class="progress-bar">
+                <div class="progress-fill ready-progress" style="width: {{ (ready_count / total_requests * 100) if total_requests > 0 else 0 }}%"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Maintenance Requests Table -->
+<div class="table-container" data-animate="fadeInUp" data-delay="0.4s">
+    <div class="table-header">
+        <h2>Maintenance Requests</h2>
+        <div class="table-header-decoration"></div>
+    </div>
+    <table class="data-table" id="requestsTable">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Employee</th>
+                <th>Equipment</th>
+                <th>Team</th>
+                <th>Technician</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Worksheet</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if requests %}
+                {% for request in requests %}
+                <tr data-status="{{ request[7] }}" data-subject="{{ request[1].lower() }}">
+                    <td><strong>{{ request[1] }}</strong></td>
+                    <td>{{ request[2] }}</td>
+                    <td>
+                        {% if request|length > 19 and request[19] %}
+                            <span class="category-badge">{{ request[19] }}</span>
+                        {% elif request[4] %}
+                            <span class="category-badge">{{ request[4] }}</span>
+                        {% else %}
+                            <span class="category-badge">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ request[14] or 'Unassigned' }}</td>
+                    <td>{{ request[3] or 'Unassigned' }}</td>
+                    <td>
+                        <span class="stage-badge priority-{{ request[9].lower() if request|length > 9 else 'medium' }}">
+{{ request[9] if request|length > 9 else 'Medium' }}
+                        </span>
+                    </td>
+                    <td>
+                        <select class="status-select" data-id="{{ request[0] }}" onchange="updateStatus(this)">
+                            <option value="New" {% if request[7] == 'New' %}selected{% endif %}>New</option>
+                            <option value="In Progress" {% if request[7] == 'In Progress' %}selected{% endif %}>In Progress</option>
+                            <option value="Blocked" {% if request[7] == 'Blocked' %}selected{% endif %}>Blocked</option>
+                            <option value="Ready for next stage" {% if request[7] == 'Ready for next stage' %}selected{% endif %}>Ready for next stage</option>
+                            <option value="Repaired" {% if request[7] == 'Repaired' %}selected{% endif %}>Repaired</option>
+                            <option value="Scrap" {% if request[7] == 'Scrap' %}selected{% endif %}>Scrap</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="worksheet-btn" onclick="openWorksheet({{ request[0] }})" title="Open Worksheet">
+                            <span style="font-size: 1.2rem;">✏️</span> Worksheet
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="8" class="no-data">No requests found. Click "New Request" to create one.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Request Modal (same as dashboard) -->
+<div id="requestModal" class="modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); align-items: center; justify-content: center;">
+    <div class="modal-content" style="background: white; border-radius: 12px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+        <button class="modal-close" onclick="closeRequestModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 2rem; color: #999; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">×</button>
+        
+        <h2 style="font-size: 1.8rem; font-weight: 700; color: #333; margin-bottom: 10px;">Create Maintenance Request</h2>
+        <p style="color: #666; margin-bottom: 24px;">Submit a new maintenance request for equipment repair or scheduled maintenance.</p>
+        
+        <form method="POST" action="/create-request" class="request-form" id="requestForm">
+            <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Subject *</label>
+                    <input type="text" name="subject" placeholder="e.g., Leaking Oil, Strange Noise" required style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Maintenance For *</label>
+                    <select name="maintenance_for" id="maintenanceFor" required onchange="toggleMaintenanceType()" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                        <option value="Equipment" selected>Equipment</option>
+                        <option value="Work Center">Work Center</option>
+                    </select>
+                </div>
+
+                <div id="equipmentField" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Equipment *</label>
+                        <select name="equipment_id" id="equipmentSelect" required style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                            <option value="">Select equipment</option>
+                            {% for eq in equipment %}
+                            <option value="{{ eq[0] }}">{{ eq[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Category</label>
+                        <input type="text" name="category" placeholder="e.g., Computers, Machinery" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <div id="workCenterField" style="display: none; grid-template-columns: 1fr; gap: 20px;">
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Work Center *</label>
+                        <select name="work_center_id" id="workCenterSelect" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                            <option value="">Select work center</option>
+                            {% if work_centers %}
+                                {% for wc in work_centers %}
+                                <option value="{{ wc[0] }}">{{ wc[1] }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="" disabled>No work centers available. Please create one first.</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Maintenance Type</label>
+                        <div style="display: flex; gap: 20px; align-items: center; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="request_type" value="Corrective" checked>
+                                <span>Corrective</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="request_type" value="Preventive">
+                                <span>Preventive</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Priority</label>
+                        <select name="priority" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: white;">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Team</label>
+                        <input type="text" name="team" placeholder="e.g., Internal Maintenance" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Technician</label>
+                        <input type="text" name="technician" placeholder="e.g., Aka Foster" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Request Date</label>
+                        <input type="date" name="request_date" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Scheduled Date</label>
+                        <input type="date" name="scheduled_date" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Duration</label>
+                        <input type="text" name="duration" placeholder="e.g., 2 hours" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Description (Optional)</label>
+                    <textarea name="description" rows="4" placeholder="Describe the issue in detail..." style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; font-family: inherit; resize: vertical;"></textarea>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Company</label>
+                    <input type="text" name="company" value="My company" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+                </div>
+
+                <!-- Notes and Instructions Tabs -->
+                <div style="margin-top: 20px;">
+                    <div style="display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 15px;">
+                        <button type="button" class="tab-btn active" onclick="switchTab('notes')" id="notesTab" style="padding: 12px 24px; background: none; border: none; border-bottom: 3px solid #667eea; color: #667eea; font-weight: 600; cursor: pointer; font-size: 0.95rem;">Notes</button>
+                        <button type="button" class="tab-btn" onclick="switchTab('instructions')" id="instructionsTab" style="padding: 12px 24px; background: none; border: none; border-bottom: 3px solid transparent; color: #666; font-weight: 600; cursor: pointer; font-size: 0.95rem;">Instructions</button>
+                    </div>
+                    <div id="notesContent" class="tab-content">
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Notes</label>
+                        <textarea name="notes" rows="6" placeholder="Add notes about this maintenance request..." style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; font-family: inherit; resize: vertical;"></textarea>
+                    </div>
+                    <div id="instructionsContent" class="tab-content" style="display: none;">
+                        <label style="display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 8px;">Instructions</label>
+                        <textarea name="instructions" rows="6" placeholder="Add instructions for this maintenance request..." style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; font-family: inherit; resize: vertical;"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px;">
+                <button type="button" onclick="closeRequestModal()" style="padding: 12px 24px; background: #f5f5f5; color: #333; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="submit" style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer;">Create Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openRequestModal() {
+        document.getElementById('requestModal').style.display = 'flex';
+        // Reset form
+        document.getElementById('requestForm').reset();
+        document.getElementById('maintenanceFor').value = 'Equipment';
+        toggleMaintenanceType();
+        switchTab('notes');
+    }
+
+    function closeRequestModal() {
+        document.getElementById('requestModal').style.display = 'none';
+    }
+
+    function toggleMaintenanceType() {
+        const maintenanceFor = document.getElementById('maintenanceFor').value;
+        const equipmentField = document.getElementById('equipmentField');
+        const workCenterField = document.getElementById('workCenterField');
+        const equipmentSelect = document.getElementById('equipmentSelect');
+        const workCenterSelect = document.getElementById('workCenterSelect');
+        
+        if (maintenanceFor === 'Equipment') {
+            equipmentField.style.display = 'grid';
+            workCenterField.style.display = 'none';
+            equipmentSelect.required = true;
+            workCenterSelect.required = false;
+            workCenterSelect.value = '';
+        } else {
+            equipmentField.style.display = 'none';
+            workCenterField.style.display = 'grid';
+            equipmentSelect.required = false;
+            workCenterSelect.required = true;
+            equipmentSelect.value = '';
+        }
+    }
+
+    function switchTab(tabName) {
+        // Hide all tab contents
+        document.getElementById('notesContent').style.display = 'none';
+        document.getElementById('instructionsContent').style.display = 'none';
+        
+        // Remove active class from all tabs
+        document.getElementById('notesTab').classList.remove('active');
+        document.getElementById('instructionsTab').classList.remove('active');
+        
+        // Show selected tab content
+        if (tabName === 'notes') {
+            document.getElementById('notesContent').style.display = 'block';
+            document.getElementById('notesTab').classList.add('active');
+        } else if (tabName === 'instructions') {
+            document.getElementById('instructionsContent').style.display = 'block';
+            document.getElementById('instructionsTab').classList.add('active');
+        }
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('requestModal');
+        if (event.target == modal) {
+            closeRequestModal();
+        }
+        const worksheetModal = document.getElementById('worksheetModal');
+        if (event.target == worksheetModal) {
+            closeWorksheet();
+        }
+    }
+
+    function openWorksheet(requestId) {
+        document.getElementById('worksheetRequestId').value = requestId;
+        loadWorksheetComments(requestId);
+        document.getElementById('worksheetModal').style.display = 'flex';
+    }
+
+    function closeWorksheet() {
+        document.getElementById('worksheetModal').style.display = 'none';
+    }
+
+    function loadWorksheetComments(requestId) {
+        fetch(`/get-worksheet-comments/${requestId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const commentsContainer = document.getElementById('worksheetComments');
+                    commentsContainer.innerHTML = '';
+                    
+                    if (data.comments && data.comments.length > 0) {
+                        data.comments.forEach(comment => {
+                            const commentDiv = document.createElement('div');
+                            commentDiv.className = 'worksheet-comment';
+                            commentDiv.innerHTML = `
+                                <div class="comment-header">
+                                    <strong>${comment.user || 'Unknown'}</strong>
+                                    <span class="comment-date">${comment.created_at || ''}</span>
+                                </div>
+                                <div class="comment-content">${comment.comment || ''}</div>
+                            `;
+                            commentsContainer.appendChild(commentDiv);
+                        });
+                    } else {
+                        commentsContainer.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No comments yet. Add the first comment below.</p>';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading comments:', error);
+            });
+    }
+
+    function addWorksheetComment() {
+        const requestId = document.getElementById('worksheetRequestId').value;
+        const comment = document.getElementById('worksheetCommentInput').value.trim();
+        
+        if (!comment) {
+            alert('Please enter a comment');
+            return;
+        }
+        
+        fetch('/add-worksheet-comment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                request_id: requestId,
+                comment: comment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('worksheetCommentInput').value = '';
+                loadWorksheetComments(requestId);
+            } else {
+                alert('Error adding comment: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error adding comment');
+        });
+    }
+
+    function filterRequests() {
+        const searchInput = document.getElementById('searchInput').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        const table = document.getElementById('requestsTable');
+        const rows = table.getElementsByTagName('tr');
+        
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            const status = row.getAttribute('data-status') || '';
+            const subject = row.getAttribute('data-subject') || '';
+            
+            const matchesStatus = !statusFilter || status === statusFilter;
+            const matchesSearch = !searchInput || subject.includes(searchInput);
+            
+            if (matchesStatus && matchesSearch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
+    function updateStatus(selectElement) {
+        const requestId = selectElement.getAttribute('data-id');
+        const newStatus = selectElement.value;
+        
+        fetch('/update-request-status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                request_id: requestId,
+                status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to update status');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating status');
+            location.reload();
+        });
+    }
+
+
+    // Number counting animation
+    document.addEventListener('DOMContentLoaded', function() {
+        const statValues = document.querySelectorAll('.stat-value[data-count]');
+        statValues.forEach(element => {
+            const target = parseInt(element.getAttribute('data-count'));
+            const start = 0;
+            const duration = 1500;
+            let startTimestamp = null;
+            
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const current = Math.floor(progress * (target - start) + start);
+                element.textContent = current;
+                
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            
+            setTimeout(() => {
+                window.requestAnimationFrame(step);
+            }, 500);
+        });
+
+        // Intersection Observer for scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('[data-animate]').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Trigger animations immediately for elements in viewport
+        setTimeout(() => {
+            document.querySelectorAll('[data-animate]').forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.top < window.innerHeight && rect.bottom > 0) {
+                    el.classList.add('animate');
+                }
+            });
+        }, 100);
+    });
+</script>
+
+<style>
+    .status-select {
+        padding: 6px 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        background: white;
+    }
+
+    .priority-low {
+        background: #e8f5e9;
+        color: #4caf50;
+    }
+
+    .priority-medium {
+        background: #fff3e0;
+        color: #ff9800;
+    }
+
+    .priority-high {
+        background: #ffebee;
+        color: #f44336;
+    }
+
+    .priority-critical {
+        background: #fce4ec;
+        color: #e91e63;
+    }
+
+    .worksheet-btn {
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s ease;
+    }
+
+    .worksheet-btn:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #653a8f 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .worksheet-comment {
+        background: #f8f9fa;
+        border-left: 3px solid #667eea;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+    }
+
+    .comment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .comment-date {
+        color: #999;
+        font-size: 0.85rem;
+    }
+
+    .comment-content {
+        color: #555;
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+</style>
+
+<!-- Worksheet Modal -->
+<div id="worksheetModal" class="modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); align-items: center; justify-content: center;">
+    <div class="modal-content" style="background: white; border-radius: 12px; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+        <button class="modal-close" onclick="closeWorksheet()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 2rem; color: #999; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">×</button>
+        
+        <h2 style="font-size: 1.8rem; font-weight: 700; color: #333; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.5rem;">✏️</span> Worksheet Comments
+        </h2>
+        <p style="color: #666; margin-bottom: 24px;">Add comments and notes for this maintenance request</p>
+        
+        <input type="hidden" id="worksheetRequestId" value="">
+        
+        <div style="margin-bottom: 30px;">
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: #333; margin-bottom: 15px;">Comments</h3>
+            <div id="worksheetComments" style="max-height: 400px; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #999; text-align: center; padding: 20px;">Loading comments...</p>
+            </div>
+        </div>
+        
+        <div>
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: #333; margin-bottom: 15px;">Add Comment</h3>
+            <textarea id="worksheetCommentInput" rows="4" placeholder="Enter your comment or note here..." style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; font-family: inherit; resize: vertical; margin-bottom: 15px;"></textarea>
+            <button onclick="addWorksheetComment()" style="padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 600; width: 100%;">Add Comment</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
